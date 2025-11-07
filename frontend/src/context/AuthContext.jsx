@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
       const userToken = localStorage.getItem('userToken');
       if (userToken) {
         try {
-          const response = await fetch('https://campusfound.onrender.com/api/auth/me', {
+          const response = await fetch('cd/api/auth/me', {
             headers: { 'Authorization': `Bearer ${userToken}` },
           });
           if (response.ok) {
