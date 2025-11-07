@@ -45,10 +45,19 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // CORS configuration
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true
-}));
+// app.use(cors({
+//   origin: process.env.CLIENT_URL || 'http://localhost:5173',
+//   credentials: true
+// }));
+app.use(
+  cors({
+    origin: [
+      'http://localhost:5173',
+      'https://campus-found-9npf.vercel.app'
+    ],
+    credentials: true,
+  })
+)
 
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));
