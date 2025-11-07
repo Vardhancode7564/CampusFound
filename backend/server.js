@@ -56,6 +56,7 @@ app.use(
       'https://campus-found-9npf.vercel.app'
     ],
     credentials: true,
+    methods: ['GET','POST','PUT','PATCH','DELETE']
   })
 )
 
