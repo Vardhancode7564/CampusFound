@@ -56,7 +56,7 @@ const Footer = () => {
               <li className="flex items-center space-x-2">
                 <Mail size={16} />
                 <a href="mailto:support@campusfound.com" className="hover:text-primary-400 transition-colors">
-                  support@campusfound.com
+                  campusfoundrguktsklm@gmail.com
                 </a>
               </li>
               <li className="flex items-center space-x-2">

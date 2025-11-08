@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Phone, CreditCard, Calendar, Edit2, Save, X } from 'lucide-react';
+import { User, Mail, Phone, CreditCard, Calendar, Edit2, Save, X, Camera } from 'lucide-react';
+import API_BASE_URL from '../config/api';
 
 const Profile = () => {
   const { user, updateUserProfile } = useAuth();
@@ -13,12 +14,14 @@ const Profile = () => {
   });
   const [updateLoading, setUpdateLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchUserItems = async () => {
       try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch('https://campusfound.onrender.com/api/user/items', {
+        const response = await fetch(`${API_BASE_URL}/api/user/items`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         const data = await response.json();
@@ -81,6 +84,66 @@ const Profile = () => {
     setUpdateLoading(false);
   };
 
+  const handleProfilePictureClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleProfilePictureChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Please select an image file' });
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Image size should be less than 5MB' });
+      return;
+    }
+
+    setUploadingImage(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const token = localStorage.getItem('userToken');
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/upload-profile-picture`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
+        // Refresh user data by calling /me endpoint
+        const meResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (meResponse.ok) {
+          const meData = await meResponse.json();
+          // Update user in context (you'll need to add this to AuthContext)
+          window.location.reload(); // Temporary solution - reload to get fresh data
+        }
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Failed to upload profile picture' });
+      }
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      setMessage({ type: 'error', text: 'Failed to upload profile picture' });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -121,8 +184,37 @@ const Profile = () => {
 
         {/* Profile Picture */}
         <div className="flex justify-center mb-8">
-          <div className="bg-indigo-600 w-24 h-24 rounded-full flex items-center justify-center">
-            <User className="text-white" size={48} />
+          <div className="relative group">
+            <div className="w-32 h-32 rounded-full overflow-hidden bg-indigo-600 flex items-center justify-center border-4 border-white shadow-lg">
+              {user.profilePictureURL ? (
+                <img 
+                  src={user.profilePictureURL} 
+                  alt={user.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="text-white" size={64} />
+              )}
+            </div>
+            <button
+              onClick={handleProfilePictureClick}
+              disabled={uploadingImage}
+              className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition shadow-lg disabled:opacity-50"
+              title="Change profile picture"
+            >
+              {uploadingImage ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+              ) : (
+                <Camera size={20} />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleProfilePictureChange}
+              className="hidden"
+            />
           </div>
         </div>
 
@@ -258,7 +350,7 @@ const Profile = () => {
                 <div className="flex-1">
                   <p className="text-xs text-gray-500">Member Since</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : '2024'}
+                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recently'}
                   </p>
                 </div>
               </div>
@@ -268,7 +360,7 @@ const Profile = () => {
           {/* My Statistics */}
           <div className="mt-8 pt-8 border-t">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">My Statistics</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="bg-indigo-50 p-4 rounded-lg text-center">
                 <div className="text-3xl font-bold text-indigo-600">{items.length}</div>
                 <div className="text-sm text-gray-600 mt-1">Total Reports</div>
@@ -284,6 +376,14 @@ const Profile = () => {
               <div className="bg-blue-50 p-4 rounded-lg text-center">
                 <div className="text-3xl font-bold text-blue-600">{items.filter(i => i.status === 'active').length}</div>
                 <div className="text-sm text-gray-600 mt-1">Active</div>
+              </div>
+              <div className="bg-yellow-50 p-4 rounded-lg text-center">
+                <div className="text-3xl font-bold text-yellow-600">{items.filter(i => i.status === 'claimed').length}</div>
+                <div className="text-sm text-gray-600 mt-1">Claimed</div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg text-center">
+                <div className="text-3xl font-bold text-gray-600">{items.filter(i => i.status === 'resolved').length}</div>
+                <div className="text-sm text-gray-600 mt-1">Resolved</div>
               </div>
             </div>
           </div>

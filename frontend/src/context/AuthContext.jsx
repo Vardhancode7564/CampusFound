@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import API_BASE_URL from '../config/api';
 
 const AuthContext = createContext();
 
@@ -22,7 +23,7 @@ export const AuthProvider = ({ children }) => {
       const userToken = localStorage.getItem('userToken');
       if (userToken) {
         try {
-          const response = await fetch('cd/api/auth/me', {
+          const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
             headers: { 'Authorization': `Bearer ${userToken}` },
           });
           if (response.ok) {
@@ -40,7 +41,7 @@ export const AuthProvider = ({ children }) => {
       const adminToken = localStorage.getItem('adminToken');
       if (adminToken) {
         try {
-          const response = await fetch('https://campusfound.onrender.com/api/admin/me', {
+          const response = await fetch(`${API_BASE_URL}/api/admin/me`, {
             headers: { 'Authorization': `Bearer ${adminToken}` },
           });
           if (response.ok) {
@@ -61,7 +62,7 @@ export const AuthProvider = ({ children }) => {
   // Register admin
   const register = async (userData) => {
     try {
-      const response = await fetch('https://campusfound.onrender.com/api/admin/register', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +85,7 @@ export const AuthProvider = ({ children }) => {
   // Login admin
   const login = async (credentials) => {
     try {
-      const response = await fetch('https://campusfound.onrender.com/api/admin/login', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -113,21 +114,25 @@ export const AuthProvider = ({ children }) => {
   // User login
   const userLogin = async (credentials) => {
     try {
-      const response = await fetch('https://campusfound.onrender.com/api/auth/login', {
+      console.log('Attempting login with:', { email: credentials.email });
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
       });
       const data = await response.json();
+      console.log('Login response:', { status: response.status, data });
+      
       if (response.ok) {
         localStorage.setItem('userToken', data.token);
         setUser(data.user);
         return { success: true };
       } else {
-        return { success: false, message: data.message };
+        return { success: false, message: data.message || 'Invalid credentials' };
       }
     } catch (error) {
-      return { success: false, message: 'Login failed' };
+      console.error('Login error:', error);
+      return { success: false, message: 'Login failed. Please check if the server is running.' };
     }
   };
 
@@ -140,7 +145,7 @@ export const AuthProvider = ({ children }) => {
   // User register
   const userRegister = async (userData) => {
     try {
-      const response = await fetch('https://campusfound.onrender.com/api/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
@@ -163,7 +168,7 @@ export const AuthProvider = ({ children }) => {
   const updateUserProfile = async (profileData) => {
     try {
       const userToken = localStorage.getItem('userToken');
-      const response = await fetch('https://campusfound.onrender.com/api/auth/profile', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',

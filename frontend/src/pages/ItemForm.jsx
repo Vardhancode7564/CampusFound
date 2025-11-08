@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import API_BASE_URL from '../config/api';
 
 const ItemForm = () => {
   const { id } = useParams();
@@ -42,7 +43,7 @@ const ItemForm = () => {
 
   const fetchItem = async () => {
     try {
-      const response = await fetch(`https://campusfound.onrender.com/api/items/${id}`);
+      const response = await fetch(`${API_BASE_URL}/api/items/${id}`);
       const data = await response.json();
       if (data.success) {
         const item = data.item;
@@ -90,8 +91,8 @@ const ItemForm = () => {
 
     try {
       const url = isEdit
-        ? `https://campusfound.onrender.com/api/items/${id}`
-        : 'https://campusfound.onrender.com/api/items';
+        ? `${API_BASE_URL}/api/items/${id}`
+        : `${API_BASE_URL}/api/items`;
       
       const response = await fetch(url, {
         method: isEdit ? 'PUT' : 'POST',

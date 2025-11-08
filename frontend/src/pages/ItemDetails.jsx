@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MapPin, Calendar, Phone, Mail, Tag, MessageSquare, Clock } from 'lucide-react';
+import API_BASE_URL from '../config/api';
 
 const ItemDetails = () => {
   const { id } = useParams()
@@ -19,7 +20,7 @@ const ItemDetails = () => {
 
   const fetchItem = async () => {
     try {
-      const response = await fetch(`https://campusfound.onrender.com/api/items/${id}`);
+      const response = await fetch(`${API_BASE_URL}/api/items/${id}`);
       const data = await response.json();
       if (response.ok) {
         setItem(data.item);
@@ -47,7 +48,7 @@ const ItemDetails = () => {
     const token = localStorage.getItem('userToken');
 
     try {
-      const response = await fetch('https://campusfound.onrender.com/api/claims', {
+      const response = await fetch(`${API_BASE_URL}/api/claims`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -61,11 +62,13 @@ const ItemDetails = () => {
       });
       
       if (response.ok) {
-        alert('Claim submitted successfully!');
+        const data = await response.json();
+        alert(data.message || 'Claim submitted successfully! The item owner has been notified via email.');
         setShowClaimModal(false);
         setClaimMessage('');
       } else {
-        alert('Failed to submit claim');
+        const errorData = await response.json();
+        alert(errorData.message || 'Failed to submit claim');
       }
     } catch (error) {
       console.error('Error:', error);

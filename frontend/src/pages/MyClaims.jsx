@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ClipboardList, Calendar, MapPin, AlertCircle } from 'lucide-react';
+import { format } from 'date-fns';
+import API_BASE_URL from '../config/api';
 
 const MyClaims = () => {
   const [claims, setClaims] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all')
 
   useEffect(() => {
@@ -14,17 +17,27 @@ const MyClaims = () => {
   const fetchMyClaims = async () => {
     try {
       const token = localStorage.getItem('userToken');
-      const response = await fetch('https://campusfound.onrender.com/api/claims/my', {
+      console.log('Fetching claims with token:', token ? 'Token exists' : 'No token');
+      
+      const response = await fetch(`${API_BASE_URL}/api/claims/my`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
+      
+      console.log('Claims API response status:', response.status);
       const data = await response.json();
+      console.log('Claims data:', data);
+      
       if (response.ok) {
         setClaims(data.claims || []);
+        setError(null);
+      } else {
+        setError(data.message || 'Failed to fetch claims');
       }
     } catch (error) {
       console.error('Failed to fetch claims:', error);
+      setError('Network error. Please check your connection.');
     } finally {
       setLoading(false);
     }
@@ -44,6 +57,8 @@ const MyClaims = () => {
   }
 
   const filteredClaims = claims.filter(claim => {
+    // Filter out claims where itemId was not populated or is null
+    if (!claim.itemId || !claim.itemId._id) return false;
     if (filter === 'all') return true
     return claim.status === filter
   })
@@ -52,6 +67,28 @@ const MyClaims = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center">
+          <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Claims</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              fetchMyClaims();
+            }}
+            className="btn-primary"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }

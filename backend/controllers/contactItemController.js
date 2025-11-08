@@ -52,6 +52,8 @@ const contactItemOwner = async (req, res) => {
         item,                // Item details
         message              // Message from contact person
       );
+      
+      console.log(`✅ Contact email sent to ${item.postedBy.email} (BCC: admin)`);
 
       res.status(200).json({
         success: true,

@@ -1,8 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
 const User = require('../models/User');
 const { protectUser } = require('../middleware/auth');
+
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -40,6 +56,9 @@ router.post('/register', async (req, res) => {
         name: user.name,
         email: user.email,
         studentId: user.studentId,
+        phone: user.phone,
+        profilePictureURL: user.profilePictureURL,
+        createdAt: user.createdAt,
       },
       token: generateToken(user._id),
     });
@@ -55,19 +74,24 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log('Login attempt for email:', email);
 
     // Check for user and include password
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.log('User not found:', email);
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
+    console.log('User found, checking password...');
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.log('Password mismatch for user:', email);
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
+    console.log('Login successful for user:', email);
     res.json({
       success: true,
       user: {
@@ -75,12 +99,15 @@ router.post('/login', async (req, res) => {
         name: user.name,
         email: user.email,
         studentId: user.studentId,
+        phone: user.phone,
+        profilePictureURL: user.profilePictureURL,
+        createdAt: user.createdAt,
       },
       token: generateToken(user._id),
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Login error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
@@ -97,6 +124,7 @@ router.get('/me', protectUser, async (req, res) => {
         email: req.user.email,
         studentId: req.user.studentId,
         phone: req.user.phone,
+        profilePictureURL: req.user.profilePictureURL,
         createdAt: req.user.createdAt,
       },
     });
@@ -147,6 +175,7 @@ router.put('/profile', protectUser, async (req, res) => {
         email: user.email,
         studentId: user.studentId,
         phone: user.phone,
+        profilePictureURL: user.profilePictureURL,
         createdAt: user.createdAt,
       },
     });
@@ -155,6 +184,81 @@ router.put('/profile', protectUser, async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Server error' 
+    });
+  }
+});
+
+// @route   POST /api/auth/upload-profile-picture
+// @desc    Upload or update profile picture
+// @access  Private
+router.post('/upload-profile-picture', protectUser, upload.single('profilePicture'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide an image file'
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Delete old profile picture from Cloudinary if exists
+    if (user.profilePicturePublicId) {
+      try {
+        await cloudinary.uploader.destroy(user.profilePicturePublicId);
+      } catch (error) {
+        console.error('Error deleting old profile picture:', error);
+      }
+    }
+
+    // Upload new profile picture to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { 
+          resource_type: 'image', 
+          folder: 'campus-found/profile-pictures',
+          transformation: [
+            { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+            { quality: 'auto' }
+          ]
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      ).end(req.file.buffer);
+    });
+
+    // Update user with new profile picture
+    user.profilePictureURL = result.secure_url;
+    user.profilePicturePublicId = result.public_id;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile picture uploaded successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        studentId: user.studentId,
+        phone: user.phone,
+        profilePictureURL: user.profilePictureURL,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error('Error uploading profile picture:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to upload profile picture'
     });
   }
 });

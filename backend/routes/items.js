@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const Item = require('../models/Item');
-const { protect, protectUser } = require('../middleware/auth');
+const { protect, protectUser, protectBoth } = require('../middleware/auth');
 const { contactItemOwner } = require('../controllers/contactItemController');
 
 // Configure multer for memory storage
@@ -55,7 +55,7 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/items
 // @desc    Create new item (users and admin)
 // @access  Private
-router.post('/', protectUser, upload.single('image'), async (req, res) => {
+router.post('/', protectBoth, upload.single('image'), async (req, res) => {
   try {
     const { type, title, description, category, location, date, contactEmail, contactPhone } = req.body;
 
@@ -89,7 +89,7 @@ router.post('/', protectUser, upload.single('image'), async (req, res) => {
       postedBy: req.user._id,
       contactInfo: {
         email: contactEmail || req.user.email,
-        phone: contactPhone || req.user.phone,
+        phone: contactPhone || (req.user.phone || ''),
       },
     });
 
@@ -103,22 +103,25 @@ router.post('/', protectUser, upload.single('image'), async (req, res) => {
 // @route   PUT /api/items/:id
 // @desc    Update item (owner or admin only)
 // @access  Private
-router.put('/:id', protectUser, upload.single('image'), async (req, res) => {
+router.put('/:id', protectBoth, upload.single('image'), async (req, res) => {
   try {
-    let item = await Item.findById(req.params.id).populate('postedBy');
+    let item = await Item.findById(req.params.id);
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
     }
 
-    // Check if user is the owner or admin
-    const isOwner = item.postedBy._id.toString() === req.user._id.toString();
+    // Admin can update any item
     const isAdmin = req.user.role === 'admin';
     
-    if (!isOwner && !isAdmin) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'You are not authorized to update this item' 
-      });
+    if (!isAdmin) {
+      // Check if user is the owner
+      const isOwner = item.postedBy.toString() === req.user._id.toString();
+      if (!isOwner) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'You are not authorized to update this item' 
+        });
+      }
     }
 
     const { type, title, description, category, location, date, status, contactEmail, contactPhone } = req.body;
@@ -166,22 +169,25 @@ router.put('/:id', protectUser, upload.single('image'), async (req, res) => {
 // @route   DELETE /api/items/:id
 // @desc    Delete item (owner or admin only)
 // @access  Private
-router.delete('/:id', protectUser, async (req, res) => {
+router.delete('/:id', protectBoth, async (req, res) => {
   try {
-    const item = await Item.findById(req.params.id).populate('postedBy');
+    const item = await Item.findById(req.params.id);
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
     }
 
-    // Check if user is the owner or admin
-    const isOwner = item.postedBy._id.toString() === req.user._id.toString();
+    // Admin can delete any item
     const isAdmin = req.user.role === 'admin';
     
-    if (!isOwner && !isAdmin) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'You are not authorized to delete this item' 
-      });
+    if (!isAdmin) {
+      // Check if user is the owner
+      const isOwner = item.postedBy.toString() === req.user._id.toString();
+      if (!isOwner) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'You are not authorized to delete this item' 
+        });
+      }
     }
 
     // Delete image from Cloudinary if exists

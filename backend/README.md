@@ -49,6 +49,11 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 CLIENT_URL=http://localhost:5173
+
+# Email Configuration (optional, for notifications)
+EMAIL_SERVICE=gmail
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
 ```
 
 ## 🔌 API Endpoints
@@ -142,6 +147,33 @@ Authorization: Bearer <your_token>
 - CORS configuration
 - Input validation
 
+## 📧 Email Notifications
+
+The system sends automated email notifications for:
+
+### Claim Notifications
+When a user submits a claim for an item:
+- **Item owner** receives detailed claim information
+- **Admin** (campusfoundrguktsklm@gmail.com) receives a BCC copy for oversight
+
+### Contact Item Owner
+When a user contacts an item owner:
+- **Item owner** receives the contact message
+- **Admin** (campusfoundrguktsklm@gmail.com) receives a BCC copy for oversight
+
+**Admin Oversight**: All email communications are copied to the admin to monitor interactions and prevent any misleading claims or misuse of the platform.
+
+### Email Setup
+1. Use a Gmail account for sending emails
+2. Enable 2-factor authentication
+3. Generate an App Password (not your regular password)
+4. Add credentials to `.env`:
+   ```env
+   EMAIL_SERVICE=gmail
+   EMAIL_USER=your_email@gmail.com
+   EMAIL_PASS=your_16_character_app_password
+   ```
+
 ## 📝 Sample Requests
 
 ### Register User
@@ -190,6 +222,7 @@ Use Postman, Insomnia, or cURL to test the API endpoints. A Postman collection i
 - **bcryptjs** - Password hashing
 - **jsonwebtoken** - JWT authentication
 - **cloudinary** - Image storage
+- **nodemailer** - Email notifications
 - **cors** - CORS middleware
 - **helmet** - Security headers
 - **express-rate-limit** - Rate limiting

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import ItemCard from '../components/ItemCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Search, Filter, X } from 'lucide-react';
+import API_BASE_URL from '../config/api';
 
 const CATEGORIES = [
   'Electronics',
@@ -46,7 +47,7 @@ const Dashboard = () => {
       if (filters.status) params.append('status', filters.status);
       if (filters.search) params.append('search', filters.search);
 
-      const response = await fetch(`https://campusfound.onrender.com/api/items?${params}`);
+      const response = await fetch(`${API_BASE_URL}/api/items?${params}`);
       const data = await response.json();
       
       if (data.success) {

@@ -6,11 +6,13 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
-    proxy: {
-      '/api': {
-        target: 'https://campusfound.onrender.com',
-        changeOrigin: true
-      }
-    }
+    // Proxy disabled for local development
+    // Use API_BASE_URL in frontend/src/config/api.js instead
+    // proxy: {
+    //   '/api': {
+    //     target: 'https://campusfound.onrender.com',
+    //     changeOrigin: true
+    //   }
+    // }
   }
 })

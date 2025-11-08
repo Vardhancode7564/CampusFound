@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Upload, X } from 'lucide-react';
+import API_BASE_URL from '../config/api';
 
 const CATEGORIES = [
   'Electronics',
@@ -90,7 +91,7 @@ const ReportItem = () => {
         data.append('image', imageFile);
       }
 
-      const response = await fetch('https://campusfound.onrender.com/api/items', {
+      const response = await fetch(`${API_BASE_URL}/api/items`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

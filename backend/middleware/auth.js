@@ -94,4 +94,68 @@ const protectUser = async (req, res, next) => {
   }
 };
 
-module.exports = { protect, protectUser };
+// Middleware to protect routes that support both admin and user access
+const protectBoth = async (req, res, next) => {
+  try {
+    let token;
+
+    // Check for token in Authorization header
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized to access this route'
+      });
+    }
+
+    try {
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+      // Try to find user first
+      let user = await User.findById(decoded.id).select('-password');
+      
+      if (user) {
+        req.user = user;
+        req.isAdmin = user.role === 'admin';
+        return next();
+      }
+
+      // If not found as user, try as admin
+      let admin = await Admin.findById(decoded.id).select('-password');
+      
+      if (admin) {
+        // Set admin as user for compatibility with existing code
+        req.user = {
+          _id: admin._id,
+          email: admin.email,
+          role: 'admin'
+        };
+        req.isAdmin = true;
+        return next();
+      }
+
+      // Neither user nor admin found
+      return res.status(401).json({
+        success: false,
+        message: 'User not found'
+      });
+
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token is invalid or expired'
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error in authentication'
+    });
+  }
+};
+
+module.exports = { protect, protectUser, protectBoth };

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Package, Trash2 } from 'lucide-react';
+import API_BASE_URL from '../config/api';
 
 const MyPosts = () => {
   const [items, setItems] = useState([])
@@ -14,7 +15,7 @@ const MyPosts = () => {
   const fetchMyItems = async () => {
     try {
       const token = localStorage.getItem('userToken');
-      const response = await fetch('https://campusfound.onrender.com/api/user/items', {
+      const response = await fetch(`${API_BASE_URL}/api/user/items`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -44,7 +45,7 @@ const MyPosts = () => {
     
     const token = localStorage.getItem('userToken');
     try {
-      const response = await fetch(`https://campusfound.onrender.com/api/items/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/items/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

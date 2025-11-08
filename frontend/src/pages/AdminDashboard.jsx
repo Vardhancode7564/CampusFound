@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import API_BASE_URL from '../config/api';
 
 const AdminDashboard = () => {
   const [items, setItems] = useState([]);
@@ -15,7 +16,7 @@ const AdminDashboard = () => {
 
   const fetchItems = async () => {
     try {
-      let url = 'https://campusfound.onrender.com/api/items?';
+      let url = `${API_BASE_URL}/api/items?`;
       if (filter.type !== 'all') url += `type=${filter.type}&`;
       if (filter.status !== 'all') url += `status=${filter.status}`;
       
@@ -34,7 +35,7 @@ const AdminDashboard = () => {
 
     const token = localStorage.getItem('adminToken');
     try {
-      const response = await fetch(`https://campusfound.onrender.com/api/items/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/items/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

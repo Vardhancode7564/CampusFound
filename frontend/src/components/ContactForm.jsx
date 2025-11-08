@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import API_BASE_URL from '../config/api';
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({
@@ -59,7 +60,7 @@ const ContactForm = () => {
     }
 
     try {
-      const response = await fetch('https://campusfound.onrender.com/api/contact', {
+      const response = await fetch(`${API_BASE_URL}/api/contact`, {
         method: 'POST',
         body: data,
       });
